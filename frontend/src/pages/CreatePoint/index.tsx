@@ -4,26 +4,45 @@ import { Link, useHistory } from 'react-router-dom';
 import { Map, TileLayer, Marker } from 'react-leaflet';
 import { LeafletMouseEvent } from 'leaflet';
 
-import logo from '../../assets/logo.svg';
+import Header from '../../components/Header';
 import { FiArrowLeft } from 'react-icons/fi';
 import './styles.css';
 
-import axios from 'axios';
 import api from '../../services/api';
+import ibgeApi from '../../services/ibgeApi';
+import * as yup from 'yup';
 
-interface Item {
-  id: number;
-  title: string;
-  image_url: string;
-}
+import FieldSet from '../../components/FieldSet';
+import FieldGroup from '../../components/FieldGroup';
+import FieldInput from '../../components/FieldInput';
+import FieldSelect from '../../components/FieldSelect';
+import ItemsGrid from '../../components/ItemsGrid';
 
-interface IBGEUFResponse {
-  sigla: string;
-}
+import * as Types from '../../interfaces';
 
-interface IBGECityResponse {
-  nome: string;
-}
+const scheme = yup.object().shape({
+  name: yup.string().required(),
+  email: yup.string().email().required(),
+  whatsapp: yup.string().required(),
+  uf: yup.string().required(),
+  city: yup.string().required(),
+  latitude: yup
+    .number()
+    .test({
+      test: (value) => {
+        return value !== 0;
+      },
+    })
+    .required(),
+  longitude: yup
+    .number()
+    .test({
+      test: (value) => {
+        return value !== 0;
+      },
+    })
+    .required(),
+});
 
 const CreatePoint = () => {
   const [formData, setFormData] = useState({
@@ -39,7 +58,7 @@ const CreatePoint = () => {
 
   const [ufs, setUfs] = useState<string[]>([]);
   const [cities, setCities] = useState<string[]>([]);
-  const [items, setItems] = useState<Item[]>([]);
+  const [items, setItems] = useState<Types.Item[]>([]);
 
   const [selectedUf, setSelectedUf] = useState('0');
   const [selectedCity, setSelectedCity] = useState('0');
@@ -67,29 +86,19 @@ const CreatePoint = () => {
   }, []);
 
   useEffect(() => {
-    axios
-      .get<IBGEUFResponse[]>(
-        'https://servicodados.ibge.gov.br/api/v1/localidades/estados'
-      )
-      .then((response) => {
-        const ufInitials = response.data.map((uf) => uf.sigla);
-        setUfs(ufInitials);
-      });
+    ibgeApi.indexUF((response) => {
+      const ufInitials = response.data.map((uf) => uf.sigla);
+      setUfs(ufInitials);
+    });
   }, []);
 
   useEffect(() => {
-    if (selectedUf === '0') {
-      return;
-    }
+    if (selectedUf === '0') return;
 
-    axios
-      .get<IBGECityResponse[]>(
-        `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${selectedUf}/municipios`
-      )
-      .then((response) => {
-        const cityNames = response.data.map((city) => city.nome);
-        setCities(cityNames);
-      });
+    ibgeApi.indexUFCities(selectedUf, (response) => {
+      const citiesList = response.data.map((city) => city.nome);
+      setCities(citiesList);
+    });
   }, [selectedUf]);
 
   function handleSelectUf(event: ChangeEvent<HTMLSelectElement>) {
@@ -113,9 +122,7 @@ const CreatePoint = () => {
   }
 
   function handleSelectItem(id: number) {
-    const alreadySelected = selectedItems.findIndex((item) => item === id);
-
-    if (alreadySelected >= 0) {
+    if (selectedItems.includes(id)) {
       const filteredItems = selectedItems.filter((item) => item !== id);
 
       setSelectedItems(filteredItems);
@@ -144,23 +151,26 @@ const CreatePoint = () => {
       items,
     };
 
-    await api.post('/points', data);
-
-    alert('Ponto de coleta criado');
-
-    history.push('/');
+    // TODO show errors of validate
+    scheme
+      .isValid(data)
+      .then(async (valid) => {
+        if (valid) {
+          await api.post('/points', data);
+          history.push('/');
+        }
+      })
+      .catch((e) => console.log(e));
   }
 
   return (
     <div id="page-create-point">
-      <header>
-        <img src={logo} alt="Ecoleta" />
-
+      <Header>
         <Link to="/">
           <FiArrowLeft />
           Voltar para home
         </Link>
-      </header>
+      </Header>
 
       <form onSubmit={handleSubmit} autoComplete="off">
         <h1>
@@ -168,49 +178,31 @@ const CreatePoint = () => {
           ponto de coleta
         </h1>
 
-        <fieldset>
-          <legend>
-            <h2>Dados</h2>
-          </legend>
+        <FieldSet title="Dados">
+          <FieldInput
+            name="name"
+            type="text"
+            label="Nome da entidade"
+            handleInputChange={handleInputChange}
+          />
 
-          <div className="field">
-            <label htmlFor="name">Nome da entidade</label>
-            <input
-              type="text"
-              name="name"
-              id="name"
-              onChange={handleInputChange}
+          <FieldGroup>
+            <FieldInput
+              name="email"
+              type="email"
+              label="E-mail"
+              handleInputChange={handleInputChange}
             />
-          </div>
+            <FieldInput
+              name="whatsapp"
+              type="text"
+              label="Whatsapp"
+              handleInputChange={handleInputChange}
+            />
+          </FieldGroup>
+        </FieldSet>
 
-          <div className="field-group">
-            <div className="field">
-              <label htmlFor="email">E-mail</label>
-              <input
-                type="email"
-                name="email"
-                id="email"
-                onChange={handleInputChange}
-              />
-            </div>
-            <div className="field">
-              <label htmlFor="whatsapp">Whatsapp</label>
-              <input
-                type="text"
-                name="whatsapp"
-                id="whatsapp"
-                onChange={handleInputChange}
-              />
-            </div>
-          </div>
-        </fieldset>
-
-        <fieldset>
-          <legend>
-            <h2>Endereço</h2>
-            <span>Selecione o endereço no mapa</span>
-          </legend>
-
+        <FieldSet title="Endereço" instructions="Selecione o endereço no mapa">
           <Map center={initialPosition} zoom={15} onClick={handleMapClick}>
             <TileLayer
               attribution='&amp;copy <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
@@ -220,64 +212,36 @@ const CreatePoint = () => {
             <Marker position={selectedPosition} />
           </Map>
 
-          <div className="field-group">
-            <div className="field">
-              <label htmlFor="uf">Estado (UF)</label>
-              <select
-                name="uf"
-                id="uf"
-                value={selectedUf}
-                onChange={handleSelectUf}
-              >
-                <option value="0">Selecione uma UF</option>
+          <FieldGroup>
+            <FieldSelect
+              name="uf"
+              label="Estado (UF)"
+              instructions="Selecione uma UF"
+              data={ufs}
+              value={selectedUf}
+              handleChange={handleSelectUf}
+            />
+            <FieldSelect
+              name="city"
+              label="Cidade"
+              instructions="Selecione uma cidade"
+              data={cities}
+              value={selectedCity}
+              handleChange={handleSelectCity}
+            />
+          </FieldGroup>
+        </FieldSet>
 
-                {ufs.map((uf) => (
-                  <option key={uf} value={uf}>
-                    {uf}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="field">
-              <label htmlFor="city">Cidade</label>
-              <select
-                name="city"
-                id="city"
-                value={selectedCity}
-                onChange={handleSelectCity}
-              >
-                <option value="0">Selecione uma cidade</option>
-
-                {cities.map((city) => (
-                  <option key={city} value={city}>
-                    {city}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </fieldset>
-
-        <fieldset>
-          <legend>
-            <h2>Itens de coleta</h2>
-            <span>Selecione um ou mais itens abaixo</span>
-          </legend>
-
-          <ul className="items-grid">
-            {items.map((item) => (
-              <li
-                key={item.id}
-                className={selectedItems.includes(item.id) ? 'selected' : ''}
-                onClick={() => handleSelectItem(item.id)}
-              >
-                <img src={item.image_url} alt={item.title} />
-                <span>{item.title}</span>
-              </li>
-            ))}
-          </ul>
-        </fieldset>
+        <FieldSet
+          title="Itens de coleta"
+          instructions="Selecione um ou mais itens abaixo"
+        >
+          <ItemsGrid
+            data={items}
+            selectedItems={selectedItems}
+            handleSelectItem={handleSelectItem}
+          />
+        </FieldSet>
 
         <button type="submit">Cadastrar ponto de coleta</button>
       </form>
