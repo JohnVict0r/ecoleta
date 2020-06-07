@@ -9,16 +9,20 @@
     <img alt="Made by Rocketseat" src="https://img.shields.io/badge/made%20by-Rocketseat-%237519C1">
   </a>
   <a>
-  <img alt="License" src="https://img.shields.io/github/license/vitorserrano/ecoleta?color=%237519C1">
+  <img alt="License" src="https://img.shields.io/github/license/johnvict0r/ecoleta?color=%237519C1">
 </p>
 
 # Índice
 
-- [Sobre](#sobre)
-- [Documentação](#documentacao)
-- [Tecnologias Utilizadas](#tecnologias-utilizadas)
-- [Como Usar](#como-usar)
-- [Como Contribuir](#como-contribuir)
+- [Índice](#índice)
+  - [:bookmark: Sobre](#bookmark-sobre)
+  - [:books: Documentação](#books-documentação)
+  - [:rocket: Tecnologias Utilizadas](#rocket-tecnologias-utilizadas)
+  - [:heavy_check_mark: Resultado:](#heavy_check_mark-resultado)
+  - [:fire: Como usar](#fire-como-usar)
+  - [:recycle: Como contribuir](#recycle-como-contribuir)
+  - [:mortar_board: Quem ministrou?](#mortar_board-quem-ministrou)
+  - [:memo: License](#memo-license)
 
 <a id="sobre"></a>
 
@@ -112,5 +116,5 @@ Esse projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE.md) para
 ---
 
 <h4 align="center">
-    Feito com 💜 by <a href="https://www.linkedin.com/in/vitor-serrano/" target="_blank">Vitor Serrano</a>
+    Feito com 💜 by <a href="https://www.linkedin.com/in/johnv-alves/" target="_blank">John Victor</a>
 </h4>
