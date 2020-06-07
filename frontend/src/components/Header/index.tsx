@@ -2,11 +2,15 @@ import React from 'react';
 
 import logo from '../../assets/logo.svg';
 
-export default function Header({ children = {} }) {
+interface Header {
+  children?: object;
+}
+
+export default function Header({ children }: Header) {
   return (
     <header>
       <img src={logo} alt="Ecoleta" />
-      {children}
+      {children && children}
     </header>
   );
 }
